@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cập Nhật Luật Nhân Sự Mới</title>
+    <!-- Tải thư viện hiển thị Markdown và bảng biểu -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex h-screen text-gray-800">
+
+    <!-- Thanh Menu Bên Trái (Sidebar) -->
+    <div class="w-80 bg-slate-900 text-white flex flex-col h-full border-r border-slate-700">
+        <div class="p-5 border-b border-slate-700">
+            <h1 class="font-bold text-lg text-amber-400">HR Law Hub</h1>
+            <p class="text-xs text-slate-400 mt-1">Cập nhật & So sánh điểm mới</p>
+        </div>
+        <div id="law-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+            <p class="text-sm text-slate-400 italic">Đang tải danh sách...</p>
+        </div>
+    </div>
+
+    <!-- Nội dung chi tiết bên phải -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        <div id="content" class="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full prose prose-slate">
+            <h2 class="text-2xl font-bold text-slate-700">Chào mừng bạn đến với HR Law Hub</h2>
+            <p class="mt-4 text-gray-600">Vui lòng chọn một văn bản luật ở thanh bên trái để xem chi tiết các điểm nổi bật và bảng đối chiếu thay đổi.</p>
+        </div>
+    </div>
+
+    <script>
+        // THAY ĐỔI 2 THÔNG TIN NÀY THEO TÀI KHOẢN CỦA BẠN
+        const USERNAME = "duyuyen03"; 
+        const REPO = "hrlaw";
+
+        // Hàm tự động quét danh sách file trong thư mục 'data'
+        async function fetchLawList() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/data`);
+                if (!response.ok) throw new Error();
+                const files = await response.json();
+                
+                const listContainer = document.getElementById('law-list');
+                listContainer.innerHTML = '';
+
+                // Lọc lấy các file .md và sắp xếp mới nhất lên đầu
+                const mdFiles = files.filter(f => f.name.endsWith('.md')).reverse();
+
+                if(mdFiles.length === 0) {
+                    listContainer.innerHTML = '<p class="text-sm text-slate-400 italic">Chưa có văn bản nào.</p>';
+                    return;
+                }
+
+                mdFiles.forEach(file => {
+                    const button = document.createElement('button');
+                    // Tên file dạng "2026-06-21-Luat-Bao-Hiem.md" -> Hiển thị đẹp hơn
+                    const displayName = file.name.replace('.md', '').replaceAll('-', ' ');
+                    
+                    button.className = "w-full text-left p-3 rounded text-sm hover:bg-slate-800 transition-colors block border-l-2 border-transparent hover:border-amber-400 truncate";
+                    button.innerText = displayName;
+                    button.onclick = () => loadContent(file.download_url, button);
+                    listContainer.appendChild(button);
+                });
+            } catch (error) {
+                document.getElementById('law-list').innerHTML = '<p class="text-sm text-red-400">Hãy kích hoạt luồng tự động để tạo thư mục data trước.</p>';
+            }
+        }
+
+        // Hàm tải nội dung file Markdown và hiển thị dạng HTML
+        async function loadContent(url, activeBtn) {
+            // Reset active trạng thái nút
+            document.querySelectorAll('#law-list button').forEach(b => b.classList.remove('bg-slate-800', 'border-amber-400'));
+            activeBtn.classList.add('bg-slate-800', 'border-amber-400');
+
+            const response = await fetch(url);
+            const markdownText = await response.text();
+            
+            // Render nội dung Markdown sang HTML (Bao gồm cả Table)
+            document.getElementById('content').innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 strict-html-table">
+                    ${marked.parse(markdownText)}
+                </div>
+            `;
+            
+            // Định dạng nhanh cho bảng biểu sau khi render
+            document.querySelectorAll('.strict-html-table table').forEach(table => {
+                table.className = "min-w-full divide-y divide-gray-200 mt-4 border text-sm";
+                table.querySelectorAll('th').forEach(th => th.className = "bg-gray-100 p-3 font-semibold text-left border");
+                table.querySelectorAll('td').forEach(td => td.className = "p-3 border vertical-align-top");
+            });
+        }
+
+        fetchLawList();
+    </script>
+</body>
+</html>
