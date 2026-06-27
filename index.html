@@ -1,97 +1,164 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cập Nhật Luật Nhân Sự Mới</title>
-    <!-- Tải thư viện hiển thị Markdown và bảng biểu -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 flex h-screen text-gray-800">
+<!-- Thanh Menu di động (Chỉ hiển thị trên điện thoại/máy tính bảng) -->
+<div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-700">
+    <div class="flex items-center space-x-2">
+        <h1 class="font-bold text-amber-400">HR Law Hub</h1>
+    </div>
+    <button id="menu-toggle" class="p-2 text-slate-300 hover:text-white focus:outline-none">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
+</div>
 
-    <!-- Thanh Menu Bên Trái (Sidebar) -->
-    <div class="w-80 bg-slate-900 text-white flex flex-col h-full border-r border-slate-700">
-        <div class="p-5 border-b border-slate-700">
+<!-- Thanh Menu Bên Trái (Sidebar) - Hỗ trợ ẩn/hiển thị linh hoạt trên di động -->
+<div id="sidebar" class="hidden md:flex w-full md:w-80 bg-slate-900 text-white flex-col h-full border-r border-slate-700 absolute md:relative z-20 transition-all duration-300">
+    <div class="p-5 border-b border-slate-700 flex justify-between items-center">
+        <div>
             <h1 class="font-bold text-lg text-amber-400">HR Law Hub</h1>
             <p class="text-xs text-slate-400 mt-1">Cập nhật & So sánh điểm mới</p>
         </div>
-        <div id="law-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-            <p class="text-sm text-slate-400 italic">Đang tải danh sách...</p>
+        <!-- Nút đóng menu trên di động -->
+        <button id="menu-close" class="md:hidden p-1 text-slate-400 hover:text-white">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+    <div id="law-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+        <div class="flex items-center space-x-2 text-slate-400 italic p-2 text-sm">
+            <svg class="animate-spin h-4 w-4 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Đang tải danh sách...</span>
         </div>
     </div>
+</div>
 
-    <!-- Nội dung chi tiết bên phải -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden">
-        <div id="content" class="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full prose prose-slate">
+<!-- Lớp phủ mờ khi mở menu trên di động -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-10 md:hidden"></div>
+
+<!-- Nội dung chi tiết văn bản bên phải -->
+<div class="flex-1 flex flex-col h-full overflow-hidden">
+    <div id="content" class="flex-1 overflow-y-auto p-4 md:p-8 max-w-4xl mx-auto w-full prose prose-slate">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-2xl font-bold text-slate-700">Chào mừng bạn đến với HR Law Hub</h2>
-            <p class="mt-4 text-gray-600">Vui lòng chọn một văn bản luật ở thanh bên trái để xem chi tiết các điểm nổi bật và bảng đối chiếu thay đổi.</p>
+            <p class="mt-4 text-gray-600 leading-relaxed">Vui lòng chọn một văn bản luật ở thanh bên trái để xem chi tiết các điểm nổi bật và bảng đối chiếu thay đổi luật nhân sự mới nhất.</p>
+            <div class="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+                <strong>💡 Mẹo nhỏ:</strong> Hệ thống tự động cập nhật dữ liệu mới mỗi khi kịch bản Make của bạn chạy thành công và tạo file trong thư mục "data" trên GitHub.
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // THAY ĐỔI 2 THÔNG TIN NÀY THEO TÀI KHOẢN CỦA BẠN
-        const USERNAME = "duyuyen03"; 
-        const REPO = "hrlaw";
+<script>
+    // Cấu hình tài khoản GitHub của bạn
+    const USERNAME = "duyuyen03"; 
+    const REPO = "hrlaw";
 
-        // Hàm tự động quét danh sách file trong thư mục 'data'
-        async function fetchLawList() {
-            try {
-                const response = await fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/data`);
-                if (!response.ok) throw new Error();
-                const files = await response.json();
-                
-                const listContainer = document.getElementById('law-list');
-                listContainer.innerHTML = '';
+    // Quản lý trạng thái đóng mở Sidebar trên di động
+    const menuToggle = document.getElementById('menu-toggle');
+    const menuClose = document.getElementById('menu-close');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
 
-                // Lọc lấy các file .md và sắp xếp mới nhất lên đầu
-                const mdFiles = files.filter(f => f.name.endsWith('.md')).reverse();
+    function toggleMobileMenu() {
+        sidebar.classList.toggle('hidden');
+        sidebar.classList.toggle('flex');
+        overlay.classList.toggle('hidden');
+    }
 
-                if(mdFiles.length === 0) {
-                    listContainer.innerHTML = '<p class="text-sm text-slate-400 italic">Chưa có văn bản nào.</p>';
-                    return;
-                }
+    menuToggle.addEventListener('click', toggleMobileMenu);
+    menuClose.addEventListener('click', toggleMobileMenu);
+    overlay.addEventListener('click', toggleMobileMenu);
 
-                mdFiles.forEach(file => {
-                    const button = document.createElement('button');
-                    // Tên file dạng "2026-06-21-Luat-Bao-Hiem.md" -> Hiển thị đẹp hơn
-                    const displayName = file.name.replace('.md', '').replaceAll('-', ' ');
-                    
-                    button.className = "w-full text-left p-3 rounded text-sm hover:bg-slate-800 transition-colors block border-l-2 border-transparent hover:border-amber-400 truncate";
-                    button.innerText = displayName;
-                    button.onclick = () => loadContent(file.download_url, button);
-                    listContainer.appendChild(button);
-                });
-            } catch (error) {
-                document.getElementById('law-list').innerHTML = '<p class="text-sm text-red-400">Hãy kích hoạt luồng tự động để tạo thư mục data trước.</p>';
+    // Hàm tự động quét danh sách file trong thư mục 'data' trên GitHub
+    async function fetchLawList() {
+        try {
+            const response = await fetch(`https://api.github.com/repos/${USERNAME}/${REPO}/contents/data`);
+            if (!response.ok) throw new Error();
+            const files = await response.json();
+            
+            const listContainer = document.getElementById('law-list');
+            listContainer.innerHTML = '';
+
+            // Lọc lấy các file .md và sắp xếp mới nhất lên đầu
+            const mdFiles = files.filter(f => f.name.endsWith('.md')).reverse();
+
+            if(mdFiles.length === 0) {
+                listContainer.innerHTML = '<p class="text-sm text-slate-400 italic p-2">Chưa có văn bản nào trong thư mục data.</p>';
+                return;
             }
+
+            mdFiles.forEach(file => {
+                const button = document.createElement('button');
+                // Tên file dạng "2026-06-21-Luat-Bao-Hiem.md" -> Hiển thị đẹp mắt hơn bằng cách bỏ ".md" và thay thế "-" thành dấu cách
+                const displayName = file.name.replace('.md', '').replaceAll('-', ' ');
+                
+                button.className = "w-full text-left p-3 rounded text-sm hover:bg-slate-800 transition-colors block border-l-2 border-transparent hover:border-amber-400 truncate";
+                button.innerText = displayName;
+                button.onclick = () => {
+                    loadContent(file.download_url, button);
+                    // Tự động đóng menu nếu người dùng đang xem trên điện thoại di động
+                    if (window.innerWidth < 768) {
+                        toggleMobileMenu();
+                    }
+                };
+                listContainer.appendChild(button);
+            });
+        } catch (error) {
+            document.getElementById('law-list').innerHTML = `
+                <div class="text-xs text-red-400 bg-red-950/40 p-3 rounded border border-red-900/50">
+                    <p class="font-bold">Lỗi kết nối GitHub!</p>
+                    <p class="mt-1">Hãy kích hoạt luồng tự động trên Make để tạo thư mục 'data' và đẩy file lên trước.</p>
+                </div>`;
         }
+    }
 
-        // Hàm tải nội dung file Markdown và hiển thị dạng HTML
-        async function loadContent(url, activeBtn) {
-            // Reset active trạng thái nút
-            document.querySelectorAll('#law-list button').forEach(b => b.classList.remove('bg-slate-800', 'border-amber-400'));
-            activeBtn.classList.add('bg-slate-800', 'border-amber-400');
+    // Hàm tải nội dung file Markdown và hiển thị dạng HTML
+    async function loadContent(url, activeBtn) {
+        // Đặt trạng thái active cho nút được nhấn
+        document.querySelectorAll('#law-list button').forEach(b => b.classList.remove('bg-slate-800', 'border-amber-400'));
+        activeBtn.classList.add('bg-slate-800', 'border-amber-400');
 
+        // Hiển thị hiệu ứng xoay tròn Loading trong lúc tải dữ liệu
+        document.getElementById('content').innerHTML = `
+            <div class="flex flex-col items-center justify-center p-12 min-h-[300px]">
+                <svg class="animate-spin h-8 w-8 text-slate-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm text-slate-500">Đang tải nội dung văn bản...</span>
+            </div>`;
+
+        try {
             const response = await fetch(url);
+            if (!response.ok) throw new Error();
             const markdownText = await response.text();
             
-            // Render nội dung Markdown sang HTML (Bao gồm cả Table)
+            // Render nội dung Markdown sang HTML
             document.getElementById('content').innerHTML = `
-                <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 strict-html-table">
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200 strict-html-table">
                     ${marked.parse(markdownText)}
                 </div>
             `;
             
-            // Định dạng nhanh cho bảng biểu sau khi render
+            // Tìm toàn bộ thẻ <table> để đưa vào trong thẻ container cuộn ngang an toàn
             document.querySelectorAll('.strict-html-table table').forEach(table => {
-                table.className = "min-w-full divide-y divide-gray-200 mt-4 border text-sm";
-                table.querySelectorAll('th').forEach(th => th.className = "bg-gray-100 p-3 font-semibold text-left border");
-                table.querySelectorAll('td').forEach(td => td.className = "p-3 border vertical-align-top");
+                const wrapper = document.createElement('div');
+                wrapper.className = "strict-html-table-container";
+                table.parentNode.insertBefore(wrapper, table);
+                wrapper.appendChild(table);
             });
+        } catch (error) {
+            document.getElementById('content').innerHTML = `
+                <div class="p-6 bg-red-50 text-red-700 rounded-xl border border-red-200">
+                    <h3 class="font-bold">Lỗi tải dữ liệu!</h3>
+                    <p class="text-sm mt-1">Không thể đọc nội dung file luật này từ GitHub.</p>
+                </div>`;
         }
+    }
 
-        fetchLawList();
-    </script>
-</body>
-</html>
+    // Kích hoạt quét thư mục GitHub ngay khi tải xong trang web
+    fetchLawList();
+</script>
